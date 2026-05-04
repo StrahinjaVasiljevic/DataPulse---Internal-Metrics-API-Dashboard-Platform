@@ -5,8 +5,10 @@
   <title>DataPulse Widget Test</title>
   <style>
     body{font-family:sans-serif;padding:40px;background:#f5f5f5}
-    button{background:#111;color:#fff;border:none;padding:10px 20px;
-    border-radius:6px;cursor:pointer;font-size:14px;margin-top:20px}
+    h1{font-size:24px;margin-bottom:8px}
+    p{color:#555}
+    #show-btn{background:#111;color:#fff;border:none;padding:10px 20px;
+    border-radius:6px;cursor:pointer;font-size:14px;margin-top:20px;display:block}
     #dp-widget{background:white;padding:20px;border-radius:10px;
     box-shadow:0 4px 20px rgba(0,0,0,.12);display:none;
     width:280px;margin-top:20px}
@@ -21,8 +23,9 @@
 <body>
 
   <h1>DataPulse — Widget Test</h1>
-  <p>Click to open the metric ingestion widget.</p>
-  <button onclick="showDataPulse()">📊 Send a Metric</button>
+  <p>Click the button to open the metric ingestion widget.</p>
+
+  <button id="show-btn">📊 Send a Metric</button>
 
   <div id="dp-widget">
     <h4>📊 Send a Metric</h4>
@@ -37,49 +40,45 @@
     const API_BASE = 'https://datapulse-metrics-production.up.railway.app';
     const API_KEY = 'dev_key';
 
-    function showDataPulse() {
+    document.getElementById('show-btn').addEventListener('click', function() {
       document.getElementById('dp-widget').style.display = 'block';
-    }
+    });
 
-    document.addEventListener('DOMContentLoaded', function () {
-      document.getElementById('dp-submit').addEventListener('click', async function () {
-        const metric = document.getElementById('dp-metric').value;
-        const value = parseFloat(document.getElementById('dp-value').value);
-        const source = document.getElementById('dp-source').value || 'widget';
+    document.getElementById('dp-submit').addEventListener('click', async function() {
+      const metric = document.getElementById('dp-metric').value.trim();
+      const value = parseFloat(document.getElementById('dp-value').value);
+      const source = document.getElementById('dp-source').value.trim() || 'widget';
 
-        if (!metric || isNaN(value)) {
-          alert('Enter metric name and numeric value.');
-          return;
-        }
+      if (!metric || isNaN(value)) {
+        alert('Enter metric name and numeric value.');
+        return;
+      }
 
-        try {
-          const response = await fetch(`${API_BASE}/api/metrics`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': API_KEY
-            },
-            body: JSON.stringify({ metric, value, source })
-          });
+      try {
+        const response = await fetch(API_BASE + '/api/metrics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+          },
+          body: JSON.stringify({ metric: metric, value: value, source: source })
+        });
 
-          const data = await response.json();
-          console.log('Response:', data);
+        const data = await response.json();
+        console.log('API response:', data);
 
-          const msg = document.getElementById('dp-msg');
-          msg.style.display = 'block';
-          setTimeout(() => {
-            msg.style.display = 'none';
-            document.getElementById('dp-widget').style.display = 'none';
-          }, 2000);
+        document.getElementById('dp-msg').style.display = 'block';
+        setTimeout(function() {
+          document.getElementById('dp-msg').style.display = 'none';
+          document.getElementById('dp-widget').style.display = 'none';
+        }, 2000);
 
-        } catch (err) {
-          alert('Failed: ' + err.message);
-          console.error(err);
-        }
-      });
+      } catch(err) {
+        alert('Error: ' + err.message);
+        console.error(err);
+      }
     });
   </script>
 
 </body>
 </html>
-

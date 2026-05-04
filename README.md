@@ -1,9 +1,9 @@
-# DataPulse — Internal Metrics API & Dashboard Platform
+# DataPulse - Internal Metrics API & Dashboard Platform
 
 > **Status:** MVP shipped · Active development
 > **Type:** Internal Tool · Platform / API · Data & Analytics
-> **Live API:** https://datapulse-production.up.railway.app
-
+> **Live API:** https://datapulse-metrics-production.up.railway.app/
+> **Instructions:** Download Raw test.html file from Github. Open file trough Web browser. Fill in data and Send Metrics. Data Metrics is stored in: https://datapulse-metrics-production.up.railway.app/api/dashboard/dev_workspace
 ---
 
 ## Component Status

@@ -13,12 +13,12 @@
   <h1>DataPulse — Widget Test</h1>
   <p>Click to open the metric ingestion widget.</p>
   <button onclick="showDataPulse()">📊 Send a Metric</button>
-  <script>
-    window.DataPulse = {
-      apiBase: 'http://localhost:3000',
-      apiKey: 'dev_key'
-    };
-  </script>
+ <script>
+  window.DataPulse = {
+    apiBase: 'https://datapulse-metrics-production.up.railway.app/',
+    apiKey: 'dev_key'
+  };
+</script>
   <script src="widget/embed.js"></script>
 </body>
 </html>

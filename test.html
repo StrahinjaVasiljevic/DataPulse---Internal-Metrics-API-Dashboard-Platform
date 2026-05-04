@@ -1,1 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DataPulse Widget Test</title>
+  <style>
+    body{font-family:sans-serif;padding:40px;background:#f5f5f5}
+    button{background:#111;color:#fff;border:none;padding:10px 20px;
+    border-radius:6px;cursor:pointer;font-size:14px;margin-top:20px}
+  </style>
+</head>
+<body>
+  <h1>DataPulse — Widget Test</h1>
+  <p>Click to open the metric ingestion widget.</p>
+  <button onclick="showDataPulse()">📊 Send a Metric</button>
+  <script>
+    window.DataPulse = {
+      apiBase: 'http://localhost:3000',
+      apiKey: 'dev_key'
+    };
+  </script>
+  <script src="widget/embed.js"></script>
+</body>
+</html>
 

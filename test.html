@@ -7,19 +7,79 @@
     body{font-family:sans-serif;padding:40px;background:#f5f5f5}
     button{background:#111;color:#fff;border:none;padding:10px 20px;
     border-radius:6px;cursor:pointer;font-size:14px;margin-top:20px}
+    #dp-widget{background:white;padding:20px;border-radius:10px;
+    box-shadow:0 4px 20px rgba(0,0,0,.12);display:none;
+    width:280px;margin-top:20px}
+    #dp-widget h4{margin:0 0 12px;font-size:14px;color:#111}
+    #dp-widget input{width:100%;padding:8px;border:1px solid #ddd;
+    border-radius:6px;font-size:13px;margin-bottom:8px;box-sizing:border-box}
+    #dp-submit{background:#111;color:#fff;border:none;padding:8px 16px;
+    border-radius:6px;cursor:pointer;font-size:13px;width:100%}
+    #dp-msg{font-size:12px;color:#22c55e;margin-top:8px;display:none}
   </style>
 </head>
 <body>
+
   <h1>DataPulse — Widget Test</h1>
   <p>Click to open the metric ingestion widget.</p>
   <button onclick="showDataPulse()">📊 Send a Metric</button>
- <script>
-  window.DataPulse = {
-    apiBase: 'https://datapulse-metrics-production.up.railway.app/',
-    apiKey: 'dev_key'
-  };
-</script>
-  <script src="widget/embed.js"></script>
+
+  <div id="dp-widget">
+    <h4>📊 Send a Metric</h4>
+    <input id="dp-metric" placeholder="Metric name (e.g. active_users)"/>
+    <input id="dp-value" type="number" placeholder="Value (e.g. 342)"/>
+    <input id="dp-source" placeholder="Source (e.g. mixpanel)"/>
+    <button id="dp-submit">Send Metric</button>
+    <p id="dp-msg">✅ Metric sent!</p>
+  </div>
+
+  <script>
+    const API_BASE = 'https://datapulse-metrics-production.up.railway.app';
+    const API_KEY = 'dev_key';
+
+    function showDataPulse() {
+      document.getElementById('dp-widget').style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('dp-submit').addEventListener('click', async function () {
+        const metric = document.getElementById('dp-metric').value;
+        const value = parseFloat(document.getElementById('dp-value').value);
+        const source = document.getElementById('dp-source').value || 'widget';
+
+        if (!metric || isNaN(value)) {
+          alert('Enter metric name and numeric value.');
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/metrics`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': API_KEY
+            },
+            body: JSON.stringify({ metric, value, source })
+          });
+
+          const data = await response.json();
+          console.log('Response:', data);
+
+          const msg = document.getElementById('dp-msg');
+          msg.style.display = 'block';
+          setTimeout(() => {
+            msg.style.display = 'none';
+            document.getElementById('dp-widget').style.display = 'none';
+          }, 2000);
+
+        } catch (err) {
+          alert('Failed: ' + err.message);
+          console.error(err);
+        }
+      });
+    });
+  </script>
+
 </body>
 </html>
 

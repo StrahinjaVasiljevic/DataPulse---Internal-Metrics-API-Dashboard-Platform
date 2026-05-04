@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "db:migrate": "node src/db/migrate.js"
+    "db:migrate": "node src/db/migrate.js",
     "test": "jest --coverage"
   },
   "dependencies": {
@@ -18,7 +18,7 @@
     "node-fetch": "^2.6.9"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "jest": "^30.3.0"
   }
 }
-

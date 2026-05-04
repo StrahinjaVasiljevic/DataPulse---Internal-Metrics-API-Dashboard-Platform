@@ -143,3 +143,36 @@ DataPulse provides three layers:
 ---
 
 ## Architecture Overview
+
+Client / Producer
+      │
+      ▼
+ ┌─────────────────────────────────────┐
+ │         API Gateway Layer           │
+ │  auth.js → tenantScope.js → rate   │
+ │  idempotency.js → planEnforcer.js  │
+ └──────────────┬──────────────────────┘
+                │
+      ┌─────────▼──────────┐
+      │   contractValidator │ ← MetricContract model
+      │   (validate unit,   │ ← ViolationLog
+      │    range, shape)    │
+      └─────────┬──────────┘
+                │
+      ┌─────────▼──────────┐
+      │    MetricEvent      │ + provenance fields
+      │    (store)          │ (source, producer_version,
+      └─────────┬──────────┘  ingested_at, latency)
+                │
+    ┌───────────┼────────────────┐
+    ▼           ▼                ▼
+AlertEngine  UsageTracker   Dashboard API
+(cooldown,   (health score,  (default views:
+ severity,    stale metrics)  current, trend,
+ preview)                     delta, provenance,
+    │                         contract status)
+    ▼
+alertDelivery
+(webhook / Slack / Email)
++ DeadLetterLog
+

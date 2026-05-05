@@ -8,6 +8,7 @@ const { checkAlerts } = require('../alerts/engine');
 const { getMetric, getHistory, getDashboard } = require('../db/queries');
 const ContractModel = require('../models/MetricContract');
 const ViolationLog = require('../models/ViolationLog');
+const usageTracker = require('../services/usageTracker');
 const { validate: validateContract } = require('../services/contractValidator');
 
 function auth(req, res, next) {
@@ -120,6 +121,7 @@ router.get('/metrics/:name/history', auth, async (req, res) => {
 router.get('/dashboard/:workspaceId', async (req, res) => {
   try {
     const data = await getDashboard(req.params.workspaceId);
+    usageTracker.recordDashboardView(req.params.workspaceId);
 
     // Enrichment: contract_status za svaku metriku
     data.metrics = data.metrics.map(m => ({

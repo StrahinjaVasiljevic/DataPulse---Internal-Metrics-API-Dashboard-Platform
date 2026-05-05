@@ -91,6 +91,34 @@ app.get('/api/health', (req, res) => {
     timestamp:    new Date().toISOString(),
   });
 });
+async function forwardToIngestion(req, submission) {
+  const apiKey = process.env.INTERNAL_API_KEY || process.env.API_KEY;
+  if (!apiKey) return { ok: false, error: 'Missing API key' };
+
+  const base =
+    process.env.INTERNAL_API_BASE ||
+    `${req.protocol}://${req.get('host')}`;
+
+  const r = await fetch(`${base}/api/metrics`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      name: submission.name,
+      value: submission.value,
+      source: submission.source,
+      timestamp: submission.timestamp,
+    }),
+  });
+
+  if (!r.ok) {
+    return { ok: false, status: r.status };
+  }
+
+  return { ok: true };
+}
 
 // Global error handler
 app.use((err, req, res, next) => {

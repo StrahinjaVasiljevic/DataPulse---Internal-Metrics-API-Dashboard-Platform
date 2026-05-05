@@ -1,3 +1,8 @@
+const path = require('path');
+const fetch = require('node-fetch');
+
+const { MetricSubmissionsRepo } = require('./repositories/metricSubmissionsRepo');
+const { makeRouter: makeUiMetricSubmissionsRouter } = require('./routes/uiMetricSubmissions');
 const fetch = require('node-fetch');
 ``
 require('dotenv').config();

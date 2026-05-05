@@ -4,33 +4,47 @@ const cors = require('cors');
 
 const app = express();
 
-// CORS — dozvoli sve origins
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-api-key']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
 }));
 
 app.options('*', cors());
 app.use(express.json());
+
 app.use('/api', require('./api/routes'));
+app.use('/api/alerts', require('./routes/alerts'));
+app.use('/api/contracts', require('./routes/contracts'));
+app.use('/api/onboarding', require('./routes/onboarding'));
+app.use('/api/usage', require('./routes/usage'));
+app.use('/api/auth', require('./routes/auth'));
 
 app.get('/', (req, res) => {
   res.json({
     status: 'DataPulse API is running',
-    version: '1.0.0',
+    version: '2.0.0',
     endpoints: {
-      ingest: 'POST /api/metrics',
-      retrieve: 'GET /api/metrics/:name',
-      history: 'GET /api/metrics/:name/history',
-      dashboard: 'GET /api/dashboard/:workspaceId',
-      health: 'GET /api/health'
+      ingest:      'POST /api/metrics',
+      retrieve:    'GET  /api/metrics/:name',
+      history:     'GET  /api/metrics/:name/history',
+      dashboard:   'GET  /api/dashboard/:workspaceId',
+      health:      'GET  /api/health',
+      alerts:      'GET  /api/alerts/:workspaceId',
+      contracts:   'GET  /api/contracts/:workspaceId',
+      onboarding:  'POST /api/onboarding/init',
+      usage:       'GET  /api/usage/:workspaceId/health',
     }
   });
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const db = require('./db/client');
+  res.json({
+    status: 'ok',
+    database: db.isConnected() ? 'postgres' : 'memory',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 const PORT = process.env.PORT || 3000;

@@ -1,43 +1,107 @@
-const RULES = [
-  { metric: 'churn_rate', condition: 'above', threshold: 5, label: 'High churn rate' },
-  { metric: 'api_error_rate', condition: 'above', threshold: 2, label: 'API error rate elevated' },
-  { metric: 'active_users', condition: 'below', threshold: 100, label: 'Active users below threshold' }
-];
+'use strict';
 
-async function checkAlerts(metric, workspaceId) {
-  const rule = RULES.find(r => r.metric === metric.metric);
-  if (!rule) return;
+const AlertModel = require('../models/Alert');
+const AlertHistory = require('../models/AlertHistory');
+const alertDelivery = require('../services/alertDelivery');
 
-  const triggered =
-    (rule.condition === 'above' && metric.value > rule.threshold) ||
-    (rule.condition === 'below' && metric.value < rule.threshold);
+// Cooldown tracker: alertId → last_fired_at (timestamp ms)
+const cooldowns = new Map();
 
-  if (!triggered) return;
-
-  const alert = {
-    label: rule.label,
-    metric: metric.metric,
-    value: metric.value,
-    threshold: rule.threshold,
-    workspaceId,
-    timestamp: new Date().toISOString()
-  };
-
-  console.warn(`[ALERT] ${alert.label} — ${metric.metric}: ${metric.value}`);
-
-  if (process.env.ALERT_WEBHOOK_URL) {
-    try {
-      const fetch = require('node-fetch');
-      await fetch(process.env.ALERT_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(alert)
-      });
-    } catch (err) {
-      console.error('[ALERT] Webhook failed:', err.message);
-    }
-  }
+function _wouldFire(alert, value) {
+  const v = Number(value);
+  if (alert.condition === 'above')  return v > alert.threshold;
+  if (alert.condition === 'below')  return v < alert.threshold;
+  if (alert.condition === 'equals') return v === alert.threshold;
+  return false;
 }
 
-module.exports = { checkAlerts };
+/**
+ * Preview — koliko puta bi se alert okino u historiji
+ * @param {Object} alert
+ * @param {Array}  dataPoints  - [{value, timestamp}]
+ */
+function previewAlert(alert, dataPoints) {
+  let fireCount = 0;
+  const firings = [];
+  for (const point of dataPoints) {
+    if (_wouldFire(alert, point.value)) {
+      fireCount++;
+      firings.push({ timestamp: point.timestamp, value: point.value });
+    }
+  }
+  return {
+    would_fire_count: fireCount,
+    total_evaluated: dataPoints.length,
+    sample_firings: firings.slice(0, 5),
+    noise_level: fireCount > 50 ? 'high' : fireCount > 10 ? 'medium' : 'low',
+  };
+}
 
+/**
+ * Evaluira jedan alert prema novoj vrijednosti
+ */
+async function evaluateAlert(alert, value) {
+  if (!alert.enabled) return;
+  if (!_wouldFire(alert, value)) return;
+
+  // Cooldown check
+  const lastFired = cooldowns.get(alert.id);
+  const cooldownMs = (alert.cooldown_minutes || 60) * 60 * 1000;
+  if (lastFired && Date.now() - lastFired < cooldownMs) {
+    AlertHistory.record({
+      alert_id: alert.id,
+      workspace_id: alert.workspace_id,
+      metric_name: alert.metric_name,
+      triggered_value: value,
+      status: 'suppressed',
+      reason: 'cooldown',
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  cooldowns.set(alert.id, Date.now());
+
+  const payload = {
+    alert_name: alert.name,
+    metric_name: alert.metric_name,
+    value,
+    threshold: alert.threshold,
+    severity: alert.severity,
+    workspace_id: alert.workspace_id,
+    timestamp: new Date().toISOString(),
+  };
+
+  await alertDelivery.dispatch(alert, payload);
+
+  AlertHistory.record({
+    alert_id: alert.id,
+    workspace_id: alert.workspace_id,
+    metric_name: alert.metric_name,
+    triggered_value: value,
+    status: 'fired',
+    severity: alert.severity,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * checkAlerts — poziva se iz api/routes.js
+ * Backwards compatible sa starim interfejsom
+ */
+async function checkAlerts(metric, workspaceId) {
+  // Seed defaultnih alertova ako workspace nema ni jednog
+  if (AlertModel.list(workspaceId).length === 0) {
+    AlertModel.seedDefaults(workspaceId);
+  }
+
+  const alerts = AlertModel.list(workspaceId).filter(
+    a => a.metric_name === metric.metric && a.enabled
+  );
+
+  await Promise.allSettled(
+    alerts.map(alert => evaluateAlert(alert, metric.value))
+  );
+}
+
+module.exports = { checkAlerts, evaluateAlert, previewAlert, _wouldFire };

@@ -50,7 +50,15 @@ app.use('/api/auth',        require('./routes/auth'));
 app.use('/api/users',       require('./routes/users'));
 app.use('/api/audit',       require('./routes/audit'));
 app.use('/api/billing',     require('./routes/billing'));
+const submissionsRepo = new MetricSubmissionsRepo();
 
+app.use(
+  '/ui/metric-submissions',
+  makeUiMetricSubmissionsRouter({
+    repo: submissionsRepo,
+    forwardToIngestion,
+  })
+);
 // Root
 app.get('/', (req, res) => {
   res.json({

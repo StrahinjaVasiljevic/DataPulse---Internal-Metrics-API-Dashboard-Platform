@@ -1,10 +1,3 @@
-/**
- * User model — email + magic link auth
- * 
- * Non-goals: nije OAuth provider
- *            nije session management (koristimo JWT)
- */
-
 'use strict';
 
 const crypto = require('crypto');
@@ -15,7 +8,6 @@ const magicLinks = new Map(); // token → { email, expires_at }
 const UserModel = {
   findOrCreate(email, workspace_id, role = 'viewer') {
     if (users.has(email)) return users.get(email);
-
     const user = {
       id: `user_${crypto.randomBytes(8).toString('hex')}`,
       email,
@@ -38,6 +30,10 @@ const UserModel = {
     return user;
   },
 
+  _listByWorkspace(workspace_id) {
+    return [...users.values()].filter(u => u.workspace_id === workspace_id);
+  },
+
   createMagicLink(email) {
     const token = crypto.randomBytes(32).toString('hex');
     const expires_at = Date.now() + 15 * 60 * 1000; // 15 min
@@ -52,13 +48,16 @@ const UserModel = {
       magicLinks.delete(token);
       return null;
     }
-    magicLinks.delete(token); // one-time use
+    magicLinks.delete(token);
     const user = users.get(link.email);
     if (user) user.last_login = new Date().toISOString();
     return user;
   },
 
-  _clear() { users.clear(); magicLinks.clear(); },
+  _clear() {
+    users.clear();
+    magicLinks.clear();
+  },
 };
 
 module.exports = UserModel;

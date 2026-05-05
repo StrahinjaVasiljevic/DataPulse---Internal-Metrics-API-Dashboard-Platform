@@ -24,6 +24,7 @@ app.use('/api/usage',      require('./routes/usage'));
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/users',      require('./routes/users'));
 app.use('/api/audit',      require('./routes/audit'));
+app.use('/api/billing',    require('./routes/billing'));
 
 app.get('/', (req, res) => {
   res.json({
